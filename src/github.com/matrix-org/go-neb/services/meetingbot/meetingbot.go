@@ -32,6 +32,21 @@ func reset() {
 	meetingChair = ""
 }
 
+// Must hold mutex before calling this!
+func markPresent(userID string) {
+	var present = false
+	for i := 0; i < len(pendingSlice); i++ {
+		if pendingSlice[i] == userID {
+			present = true
+			break
+		}
+	}
+	if !present {
+		pendingSlice = append(pendingSlice, userID)
+	}
+	return
+}
+
 // Commands supported:
 //    !rollcall
 // Responds with a notice of "meeting started"
@@ -60,16 +75,8 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				mutex.Lock()
 				defer mutex.Unlock()
 
-				var present = false
-				for i := 0; i < len(pendingSlice); i++ {
-					if pendingSlice[i] == userID {
-						present = true
-						break
-					}
-				}
-				if !present {
-					pendingSlice = append(pendingSlice, userID)
-				}
+				markPresent(userID)
+
 				return nil, nil
 			},
 		},
