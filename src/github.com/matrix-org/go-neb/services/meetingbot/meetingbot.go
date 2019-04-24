@@ -33,13 +33,22 @@ func reset() {
 }
 
 // Must hold mutex before calling this!
-func markPresent(userID string) {
-	for i := 0; i < len(pendingSlice); i++ {
-		if pendingSlice[i] == userID {
-			return
+func (s *Service) markPresent(userID string) {
+	for _, doneAttendee := range doneSlice {
+		if doneAttendee == userID {
+			return // user already done
 		}
 	}
-	pendingSlice = append(pendingSlice, userID)
+
+	for _, attendee := range pendingSlice {
+		if attendee == userID {
+			return // user queued
+		}
+	}
+
+	if userID != s.ServiceUserID() && userID != meetingChair {
+		pendingSlice = append(pendingSlice, userID)
+	}
 }
 
 // Commands supported:
@@ -70,7 +79,7 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				mutex.Lock()
 				defer mutex.Unlock()
 
-				markPresent(userID)
+				e.markPresent(userID)
 
 				return nil, nil
 			},
@@ -132,21 +141,7 @@ func (s *Service) Expansions(cli *gomatrix.Client) []types.Expansion {
 					return nil // no meeting in progress
 				}
 
-				for _, doneAttendee := range doneSlice {
-					if doneAttendee == userID {
-						return nil // user already done
-					}
-				}
-
-				for _, attendee := range pendingSlice {
-					if attendee == userID {
-						return nil // user queued
-					}
-				}
-
-				if userID != s.ServiceUserID() && userID != meetingChair {
-					pendingSlice = append(pendingSlice, userID)
-				}
+				s.markPresent(userID)
 
 				return nil
 			},
