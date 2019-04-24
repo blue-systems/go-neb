@@ -34,17 +34,12 @@ func reset() {
 
 // Must hold mutex before calling this!
 func markPresent(userID string) {
-	var present = false
 	for i := 0; i < len(pendingSlice); i++ {
 		if pendingSlice[i] == userID {
-			present = true
-			break
+			return
 		}
 	}
-	if !present {
-		pendingSlice = append(pendingSlice, userID)
-	}
-	return
+	pendingSlice = append(pendingSlice, userID)
 }
 
 // Commands supported:
