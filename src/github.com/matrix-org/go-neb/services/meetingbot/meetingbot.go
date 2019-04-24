@@ -91,6 +91,17 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				}
 			},
 		},
+		types.Command{
+			Path: []string{"debug"},
+			Command: func(roomID, userID string, args []string) (interface{}, error) {
+				mutex.Lock()
+				defer mutex.Unlock()
+
+				fmt.Printf("chair: %s - pending: %v - done: %v",
+					meetingChair, attendeesList, doneAttendeesList)
+				return nil, nil
+			},
+		},
 	}
 }
 
