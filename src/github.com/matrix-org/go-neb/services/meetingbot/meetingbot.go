@@ -3,7 +3,7 @@ package meetingbot
 
 import (
 	"fmt"
-    "regexp"
+	"regexp"
 
 	"github.com/matrix-org/go-neb/types"
 	"github.com/matrix-org/gomatrix"
@@ -49,7 +49,7 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				for i := 0; i < len(attendeesList); i++ {
 					if attendeesList[i] == userID {
 						present = true
-						break;
+						break
 					}
 				}
 				if !present {
@@ -67,14 +67,14 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				if len(attendeesList) > 0 {
 					currentUser = attendeesList[0]
 					attendeesList = attendeesList[1:]
-                    doneAttendeesList = append(doneAttendeesList, currentUser)
+					doneAttendeesList = append(doneAttendeesList, currentUser)
 					var nextUser = "Silence!"
 					if len(attendeesList) > 0 {
 						nextUser = attendeesList[0]
 					}
 					return &gomatrix.TextMessage{"m.text", fmt.Sprintf("%s's turn, Followed by %s", currentUser, nextUser)}, nil
 				} else {
-                    meetingChair = ""
+					meetingChair = ""
 					return &gomatrix.TextMessage{"m.text", string("Meeting is over, thanks for attending!")}, nil
 				}
 			},
@@ -93,14 +93,14 @@ func (s *Service) Expansions(cli *gomatrix.Client) []types.Expansion {
 					for i := 0; i < len(doneAttendeesList); i++ {
 						if doneAttendeesList[i] == userID {
 							done = true
-							break;
+							break
 						}
 					}
 					var present = false
 					for i := 0; i < len(attendeesList); i++ {
 						if attendeesList[i] == userID {
 							present = true
-							break;
+							break
 						}
 					}
 					if !done && !present && userID != s.ServiceUserID() && userID != meetingChair {
