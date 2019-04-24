@@ -23,7 +23,6 @@ var doneSlice []string
 var currentUser string
 var meetingChair = ""
 var regexpAll = regexp.MustCompile(".*")
-
 var mutex sync.Mutex
 
 func reset() {
@@ -90,6 +89,10 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				mutex.Lock()
 				defer mutex.Unlock()
 
+				if meetingChair == "" {
+					return &gomatrix.TextMessage{"m.text", string("No meeting in progress. Either do a rollcall, or we are done!")}, nil
+				}
+
 				if userID != meetingChair {
 					return &gomatrix.TextMessage{"m.text", string("To avoid confusion, only the chair may progress")}, nil
 				}
@@ -99,20 +102,18 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 					pendingSlice = pendingSlice[1:]
 					doneSlice = append(doneSlice, currentUser)
 
-					var nextUser = "Silence!"
+					var nextUser = meetingChair
 					if len(pendingSlice) > 0 {
 						nextUser = pendingSlice[0]
 					}
-					var message = fmt.Sprintf("%s's turn, Followed by %s", currentUser, nextUser)
 
-					if len(pendingSlice) == 0 {
-						reset()
-					}
-
-					return &gomatrix.TextMessage{"m.text", message}, nil
+					return &gomatrix.TextMessage{"m.text", fmt.Sprintf("%s's turn, Followed by %s", currentUser, nextUser)}, nil
 				}
 
-				return &gomatrix.TextMessage{"m.text", string("Meeting is over, thanks for attending!")}, nil
+				// else we have a a meeting in progress but only the chair is left
+				var msg = &gomatrix.TextMessage{"m.text", fmt.Sprintf("%s's turn, Followed by slience!", meetingChair)}
+				reset() // end of meeting, let's terminate!
+				return msg, nil
 			},
 		},
 		types.Command{
