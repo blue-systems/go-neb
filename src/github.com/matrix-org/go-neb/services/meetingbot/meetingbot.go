@@ -113,25 +113,26 @@ func (s *Service) Expansions(cli *gomatrix.Client) []types.Expansion {
 				mutex.Lock()
 				defer mutex.Unlock()
 
-				if meetingChair != "" {
-					var done = false
-					for i := 0; i < len(doneAttendeesList); i++ {
-						if doneAttendeesList[i] == userID {
-							done = true
-							break
-						}
-					}
-					var present = false
-					for i := 0; i < len(attendeesList); i++ {
-						if attendeesList[i] == userID {
-							present = true
-							break
-						}
-					}
-					if !done && !present && userID != s.ServiceUserID() && userID != meetingChair {
-						attendeesList = append(attendeesList, userID)
+				if meetingChair == "" {
+					return nil // no meeting in progress
+				}
+
+				for _, doneAttendee := range doneAttendeesList {
+					if doneAttendee == userID {
+						return nil // user already done
 					}
 				}
+
+				for _, attendee := range attendeesList {
+					if attendee == userID {
+						return nil // user queued
+					}
+				}
+
+				if userID != s.ServiceUserID() && userID != meetingChair {
+					attendeesList = append(attendeesList, userID)
+				}
+
 				return nil
 			},
 		},
