@@ -18,8 +18,8 @@ type Service struct {
 	types.DefaultService
 }
 
-var attendeesList []string
-var doneAttendeesList []string
+var pendingSlice []string
+var doneSlice []string
 var currentUser string
 var meetingChair = ""
 var regexpAll = regexp.MustCompile(".*")
@@ -27,8 +27,8 @@ var regexpAll = regexp.MustCompile(".*")
 var mutex sync.Mutex
 
 func reset() {
-	attendeesList = nil
-	doneAttendeesList = nil
+	pendingSlice = nil
+	doneSlice = nil
 	meetingChair = ""
 }
 
@@ -61,14 +61,14 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				defer mutex.Unlock()
 
 				var present = false
-				for i := 0; i < len(attendeesList); i++ {
-					if attendeesList[i] == userID {
+				for i := 0; i < len(pendingSlice); i++ {
+					if pendingSlice[i] == userID {
 						present = true
 						break
 					}
 				}
 				if !present {
-					attendeesList = append(attendeesList, userID)
+					pendingSlice = append(pendingSlice, userID)
 				}
 				return nil, nil
 			},
@@ -83,18 +83,18 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 					return &gomatrix.TextMessage{"m.text", string("To avoid confusion, only the chair may progress")}, nil
 				}
 
-				if len(attendeesList) > 0 {
-					currentUser = attendeesList[0]
-					attendeesList = attendeesList[1:]
-					doneAttendeesList = append(doneAttendeesList, currentUser)
+				if len(pendingSlice) > 0 {
+					currentUser = pendingSlice[0]
+					pendingSlice = pendingSlice[1:]
+					doneSlice = append(doneSlice, currentUser)
 
 					var nextUser = "Silence!"
-					if len(attendeesList) > 0 {
-						nextUser = attendeesList[0]
+					if len(pendingSlice) > 0 {
+						nextUser = pendingSlice[0]
 					}
 					var message = fmt.Sprintf("%s's turn, Followed by %s", currentUser, nextUser)
 
-					if len(attendeesList) == 0 {
+					if len(pendingSlice) == 0 {
 						reset()
 					}
 
@@ -111,7 +111,7 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				defer mutex.Unlock()
 
 				fmt.Printf("chair: %s - pending: %v - done: %v",
-					meetingChair, attendeesList, doneAttendeesList)
+					meetingChair, pendingSlice, doneSlice)
 				return nil, nil
 			},
 		},
@@ -130,20 +130,20 @@ func (s *Service) Expansions(cli *gomatrix.Client) []types.Expansion {
 					return nil // no meeting in progress
 				}
 
-				for _, doneAttendee := range doneAttendeesList {
+				for _, doneAttendee := range doneSlice {
 					if doneAttendee == userID {
 						return nil // user already done
 					}
 				}
 
-				for _, attendee := range attendeesList {
+				for _, attendee := range pendingSlice {
 					if attendee == userID {
 						return nil // user queued
 					}
 				}
 
 				if userID != s.ServiceUserID() && userID != meetingChair {
-					attendeesList = append(attendeesList, userID)
+					pendingSlice = append(pendingSlice, userID)
 				}
 
 				return nil
