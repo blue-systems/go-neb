@@ -26,6 +26,12 @@ var regexpAll = regexp.MustCompile(".*")
 
 var mutex sync.Mutex
 
+func reset() {
+	attendeesList = nil
+	doneAttendeesList = nil
+	meetingChair = ""
+}
+
 // Commands supported:
 //    !rollcall
 // Responds with a notice of "meeting started"
@@ -76,19 +82,26 @@ func (e *Service) Commands(cli *gomatrix.Client) []types.Command {
 				if userID != meetingChair {
 					return &gomatrix.TextMessage{"m.text", string("To avoid confusion, only the chair may progress")}, nil
 				}
+
 				if len(attendeesList) > 0 {
 					currentUser = attendeesList[0]
 					attendeesList = attendeesList[1:]
 					doneAttendeesList = append(doneAttendeesList, currentUser)
+
 					var nextUser = "Silence!"
 					if len(attendeesList) > 0 {
 						nextUser = attendeesList[0]
 					}
-					return &gomatrix.TextMessage{"m.text", fmt.Sprintf("%s's turn, Followed by %s", currentUser, nextUser)}, nil
-				} else {
-					meetingChair = ""
-					return &gomatrix.TextMessage{"m.text", string("Meeting is over, thanks for attending!")}, nil
+					var message = fmt.Sprintf("%s's turn, Followed by %s", currentUser, nextUser)
+
+					if len(attendeesList) == 0 {
+						reset()
+					}
+
+					return &gomatrix.TextMessage{"m.text", message}, nil
 				}
+
+				return &gomatrix.TextMessage{"m.text", string("Meeting is over, thanks for attending!")}, nil
 			},
 		},
 		types.Command{
